@@ -1,7 +1,4 @@
-require("dotenv").config();
 const shortid = require("shortid");
-
-const authToken = process.env.AUTH_TOKEN;
 
 const _axios = require("axios").create({
   method: "post",
@@ -11,7 +8,11 @@ const _axios = require("axios").create({
     "Content-Type": "application/json",
   },
 });
-
+/**
+ * Criar lista com o identificador de cada atendente
+ * @param {String} authToken Chave de autenticação do bot
+ * @return {Array}           Array com o identificador de cada atendente
+ */
 function attIdentity(attList) {
   let listAtt = [];
   for (i = 0; i < qtd; i++) {
@@ -20,6 +21,12 @@ function attIdentity(attList) {
   return listAtt;
 }
 
+/**
+ * Pegar atendentes de um bot
+ * @param {String} authToken Chave de autenticação do bot
+ * @param {Number} limit     Quantidade de atendentes para pegar
+ * @return {Array}           Array com as informações de cada atendente
+ */
 async function getAttendants(authToken, limit) {
   if (authToken) {
     _changeAuthToken(authToken);
@@ -36,6 +43,11 @@ async function getAttendants(authToken, limit) {
   return resp.data.resource.items;
 }
 
+/**
+ * Pegar todos os atendentes de um bot
+ * @param {String} authToken Chave de autenticação do bot
+ * @return {Array}           Array com as informações de cada atendente
+ */
 async function getAllAttendants(authToken) {
   if (authToken) {
     _changeAuthToken(authToken);
@@ -59,6 +71,12 @@ async function getAllAttendants(authToken) {
   }
 }
 
+/**
+ * Adiocionar atendentes em um bot
+ * @param {String} authToken Chave de autenticação do bot
+ * @param {Array}  attList   Lista com informações dos atendentes(name, email, team...) a serem adicionados
+ * @return {}                Não há retorno
+ */
 function addAttendants(authToken, attList) {
   if (authToken) {
     _changeAuthToken(authToken);
@@ -70,7 +88,11 @@ function addAttendants(authToken, attList) {
   }
   _addAttendantsSingleRequest(0, attList);
 }
-
+/**
+ * Deletar todos os atendentes de um bot
+ * @param {String} authToken Chave de autenticação do bot
+ * @return {}                Não há retorno
+ */
 function deleteAllAttendants(authToken) {
   if (authToken) {
     _changeAuthToken(authToken);
@@ -85,7 +107,12 @@ function deleteAllAttendants(authToken) {
       throw err;
     });
 }
-
+/**
+ * Deletar determinados atendentes de um bot
+ * @param {String} authToken  Chave de autenticação do bot
+ * @param {Array}  attList    Lista com o identificador dos atendentes
+ * @return {}                 Não há retorno
+ */
 function deleteSpecificAttendants(authToken, attList) {
   if (authToken) {
     _changeAuthToken(authToken);
@@ -94,7 +121,13 @@ function deleteSpecificAttendants(authToken, attList) {
   }
   _deleteAtt(0, attList);
 }
-
+/**
+ * Trocar todos os atendentes que estão na fila "oldQueue" para a nova fila "newQueue"
+ * @param {String} authToken  Chave de autenticação do bot
+ * @param {String} oldQueue   Nome da antiga fila
+ * @param {String} newQueue   Nome da nova fila
+ * @return {}                 Não há retorno
+ */
 function switchQueueAll(authToken, oldQueue, newQueue) {
   if (authToken) {
     _changeAuthToken(authToken);
@@ -136,7 +169,14 @@ function switchQueueAll(authToken, oldQueue, newQueue) {
       throw err;
     });
 }
-
+/**
+ * Trocar atendentes específicos da fila "oldQueue" para a fila "newQueue"
+ * @param {String} authToken  Chave de autenticação do bot
+ * @param {String} oldQueue   Nome da antiga fila
+ * @param {String} newQueue   Nome da nova fila
+ * @param {Array}  attList    Lista com o identificador dos atendentes
+ * @return {}                 Não há retorno
+ */
 function switchQueueSpecific(authToken, oldQueue, newQueue, attList) {
   if (authToken) {
     _changeAuthToken(authToken);
@@ -203,9 +243,9 @@ function _addAttendantsSingleRequest(i, attList) {
     uri: "/attendants",
     type: "application/vnd.iris.desk.attendant+json",
     resource: {
-      identity: attList[i].Nome,
+      identity: attList[i].name,
       email: attList[i].email,
-      teams: attList[i].Equipe,
+      teams: attList[i].team,
     },
   })
     .then(function (resp) {
