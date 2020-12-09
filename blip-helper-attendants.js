@@ -4,7 +4,7 @@ const _axios = require("axios").create({
   method: "post",
   baseURL: "https://http.msging.net/commands",
   headers: {
-    Authorization: `${authToken}`,
+    Authorization: "",
     "Content-Type": "application/json",
   },
 });
@@ -214,6 +214,71 @@ function switchQueueSpecific(authToken, oldQueue, newQueue, attList) {
   }
 }
 
+/**
+ * Adicionar variáveis de configuraçâo de um bot em outro
+ * @param {String} authTokenIn    Chave de autenticação do bot que possui as configurações
+ * @param {String} authTokenOut   Chave de autenticação do bot que receberá as configurações
+ * @return {}                 Não há retorno
+ */
+function addConfig(authTokenIn, authTokenOut) {
+  if (authTokenIn) {
+    _changeAuthToken(authTokenIn);
+  } else if (authTokenIn === undefined && authTokenOut === undefined) {
+    throw "AuthToken must not be null";
+  } else {
+    throw "AuthToken must not be null";
+  }
+
+  _request({
+    id: shortid.generate(),
+    to: "postmaster@msging.net",
+    method: "get",
+    uri: "/buckets/blip_portal:builder_published_configuration",
+  })
+    .then(function (resp) {
+      _changeAuthToken(authTokenOut);
+      _request({
+        id: shortid.generate(),
+        method: "set",
+        uri: "/buckets/blip_portal:builder_working_configuration",
+        type: "application/json",
+        resource: resp.data.resource,
+      })
+        .then(function (resp2) {
+          console.log(resp2.data.status);
+        })
+        .catch(function (err) {
+          console.log(err);
+        });
+    })
+    .catch(function (err) {
+      console.log(err);
+    });
+}
+/**
+ * Adicionar recursos de um bot para outro
+ * @param {String} authTokenIn    Chave de autenticação do bot que possui os recursos
+ * @param {String} authTokenOut   Chave de autenticação do bot que receberá os recursos
+ * @return {}                 Não há retorno
+ */
+function addResources(authTokenIn, authTokenOut) {
+  if (authTokenIn) {
+    _changeAuthToken(authTokenIn);
+  } else if (authTokenIn === undefined && authTokenOut === undefined) {
+    throw "AuthToken must not be null";
+  } else {
+    throw "AuthToken must not be null";
+  }
+
+  _request({
+    id: shortid.generate(),
+    method: "get",
+    uri: "/resources",
+  }).then(function (resp) {
+    console.log(resp.data.resources.items);
+  });
+}
+
 exports.deleteAllAttendants = deleteAllAttendants;
 exports.getAttendants = getAttendants;
 exports.addAttendants = addAttendants;
@@ -221,6 +286,8 @@ exports.getAllAttendants = getAllAttendants;
 exports.deleteSpecificAttendants = deleteSpecificAttendants;
 exports.switchQueueAll = switchQueueAll;
 exports.switchQueueSpecific = switchQueueSpecific;
+exports.addConfig = addConfig;
+exports.addResources = addResources;
 
 function _changeAuthToken(newAuthToken) {
   _axios.defaults.headers.Authorization = newAuthToken;
