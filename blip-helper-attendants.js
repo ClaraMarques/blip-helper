@@ -275,7 +275,8 @@ function addResources(authTokenIn, authTokenOut) {
     method: "get",
     uri: "/resources",
   }).then(function (resp) {
-    console.log(resp.data.resources.items);
+    let resources = resp.data.resource.items;
+    _addSingleResource(authTokenIn, authTokenOut, 0, resources);
   });
 }
 
@@ -369,4 +370,38 @@ function _deleteAtt(i, lAtt) {
     .catch((err) => {
       throw err;
     });
+}
+
+function _addSingleResource(
+  authTokenIn,
+  authTokenOut,
+  resourceIdx,
+  resourceArray
+) {
+  let resource = resourceArray[resourceIdx];
+  _changeAuthToken(authTokenIn);
+  _request({
+    id: shortid.generate(),
+    method: "get",
+    uri: `/resources/${resource}`,
+  }).then(function (resp) {
+    _changeAuthToken(authTokenOut);
+    _request({
+      id: shortid.generate(),
+      method: "set",
+      uri: `/resources/${resource}`,
+      type: "text/plain",
+      resource: `${resp.data.resource}`,
+    }).then(function (resp) {
+      if (resourceIdx === resourceArray.length - 1) {
+        return;
+      }
+      _addSingleResource(
+        authTokenIn,
+        authTokenOut,
+        resourceIdx + 1,
+        resourceArray
+      );
+    });
+  });
 }
