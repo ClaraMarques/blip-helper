@@ -1,13 +1,10 @@
 const shortid = require("shortid");
+const connection = require("./connection.js");
 
-const _axios = require("axios").create({
-  method: "post",
-  baseURL: "https://http.msging.net/commands",
-  headers: {
-    Authorization: "",
-    "Content-Type": "application/json",
-  },
-});
+const _axios = connection.axios;
+const _request = connection.request;
+const _changeAuthToken = connection.changeAuthToken;
+
 /**
  * Criar lista com o identificador de cada atendente
  * @param {String} authToken Chave de autenticação do bot
@@ -290,18 +287,9 @@ exports.switchQueueSpecific = switchQueueSpecific;
 exports.addConfig = addConfig;
 exports.addResources = addResources;
 
-function _changeAuthToken(newAuthToken) {
-  _axios.defaults.headers.Authorization = newAuthToken;
-}
-
-async function _request(data) {
-  try {
-    const response = await _axios.post(_axios.defaults.baseURL, data);
-    return response;
-  } catch (error) {
-    throw error;
-  }
-}
+// function _changeAuthToken(newAuthToken) {
+//   _axios.defaults.headers.Authorization = newAuthToken;
+// }
 
 function _addAttendantsSingleRequest(i, attList) {
   _request({
