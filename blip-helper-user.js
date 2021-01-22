@@ -4,7 +4,7 @@ const connection = require("./connection.js");
 //const _axios = connection.axios;
 const _request = connection.request;
 const _changeAuthToken = connection.changeAuthToken;
-const _reset = false;
+let _reset = false;
 
 
 const channel = {
@@ -29,6 +29,7 @@ const channel = {
  * @return {}                Não há retorno
  */
 function deleteUser(authToken, userId) {
+
   if (authToken) {
     _changeAuthToken(authToken);
   } else {
@@ -77,10 +78,17 @@ function resetUserContact(authToken, userId) {
     uri: `/contacts/${userId}`,
   })
     .then(function (resp) {
-      console.log(resp);
-      console.log(resp.data.resource);
+      
+      if (resp.data.status === "success"){
+        console.log("User fetched: ");
+        console.log(resp.data.resource);
+      } else {
+        console.log("Could not find user");
+        console.log(resp);
+        return;
+      }
       _reset = true;
-      deleteUser();
+      deleteUser(authToken, userId);
     })
     .catch(function (error) {
       console.log(error);
@@ -109,9 +117,15 @@ function getUserContact(authToken, userId) {
     uri: `/contacts/${userId}`,
   })
     .then(function (resp) {
-      console.log(resp);
-      console.log(resp.data.resource);
-      return resp.data.resource;
+      
+      if(resp.status === 200){
+        console.log(resp.data);
+        return resp.data;
+      } else {
+        console.log(resp);
+        return resp;
+      }
+      
     })
     .catch(function (error) {
       console.log(error);
@@ -123,16 +137,24 @@ exports.deleteUser = deleteUser;
 exports.resetUserContact = resetUserContact;
 
 function _deleteUserContextVariables(idx, contextVarArr, userId) {
+  
   let sizeArr = contextVarArr.length;
   let context = contextVarArr[idx];
-  console.log(context);
+  
   try {
     _request({
       id: shortid.generate(),
       to: "postmaster@msging.net",
       method: "delete",
       uri: `/contexts/${userId}/${context}`,
-    }).then(function (_){
+    }).then(function (resp){
+
+      if(resp.data.status === "success"){
+        console.log(`var ${idx}: ${context} deleted`);
+      } else {
+        console.log(`Could not delete variable ${idx}: ${context}`);
+      }
+
       idx++;
       if(idx === sizeArr) {
         const deleteUserData = {
@@ -141,7 +163,7 @@ function _deleteUserContextVariables(idx, contextVarArr, userId) {
           method: "delete",
           uri: `/contacts/${userId}`,
         };
-        _deleteUser(deleteUserData);
+        _deleteUser(deleteUserData, userId);
         return;
       } else {
         _deleteUserContextVariables(idx, contextVarArr, userId);
@@ -153,16 +175,24 @@ function _deleteUserContextVariables(idx, contextVarArr, userId) {
   }
 }
 
-function _deleteUser(data) {
+function _deleteUser(data, userId) {
+  
   _request(data)
     .then(function (response) {
-      if (response.data.status === "success") {
-        console.log(`User deleted.`); 
+      if(response.status === 200){
+        if (response.data.status === "failure") {
+          //console.log(response.data);
+          console.log(`User deleted.`); 
+        } else {
+          console.log(response.data);
+          console.log(`User deleted !`); 
+        };
       } else {
+        console.log(response);
         console.log(`Could not delete user`);
       }
       if(_reset){
-        _setUser();
+        _setUser(userId);
       }
     })
     .catch(function (error) {
@@ -170,7 +200,7 @@ function _deleteUser(data) {
     });
 }
 
-function _setUser() {
+function _setUser(userId) {
   try {
     const setUserData = {
       id: shortid.generate(),
@@ -186,11 +216,12 @@ function _setUser() {
         source:  !(userId.split("@")[1] in channel) ? "" : channel[userId.split("@")[1]],
       },
     };
-    console.log(setUserData);
     _request(setUserData).then(function (response) {
       if (response.data.status === "success") {
+        console.log(setUserData);
         console.log("=> User reseted !");
       } else {
+        console.log(response);
         console.log("=> Could not reset user");
       }
     });
