@@ -68,8 +68,62 @@ async function getAllAttendants(authToken) {
   }
 }
 
+async function getAllAttendanceRules(authToken) {
+  if (authToken) {
+    _changeAuthToken(authToken);
+  } else {
+    throw "AuthToken must not be null";
+  }
+  let limit = 100;
+  while (true) {
+    let resp = await _request({
+      id: shortid.generate(),
+      to: "postmaster@desk.msging.net",
+      method: "get",
+      uri: `/rules?$take=${limit}`,
+    });
+    let qtd = resp.data.resource.items.length;
+    if (qtd < limit) {
+      return resp.data.resource.items;
+    } else {
+      limit += limit;
+    }
+  }
+}
+
+function _addRules(i, rulesList) {
+  let rule = rulesList[i];
+  _request({
+    "id": shortid.generate(),
+    'to': 'postmaster@desk.msging.net',
+    'method': 'set',
+    'uri': '/rules',
+    'type': 'application/vnd.iris.desk.rule+json',
+    'resource': {
+        'id': shortid.generate(),
+        'title': rule.title,
+        'isActive': rule.isActive,
+        'ownerIdentity': rule.ownerIdentity,
+        'property': rule.property,
+        'relation': rule.relation,
+        'values': rule.values,
+        'team': rule.team
+    }
+})
+    .then(function (resp) {
+      console.log(resp.data.status, i);
+      if (i < rulesList.length - 1) {
+        i++;
+        addRules(i, rulesList);
+      }
+    })
+    .catch(function (err) {
+      console.log(err);
+    });
+}
+
 /**
- * Adiocionar atendentes em um bot
+ * Adicionar atendentes em um bot
  * @param {String} authToken Chave de autenticação do bot
  * @param {Array}  attList   Lista com informações dos atendentes(name, email, team...) a serem adicionados
  * @return {}                Não há retorno
@@ -277,19 +331,18 @@ function addResources(authTokenIn, authTokenOut) {
   });
 }
 
-exports.deleteAllAttendants = deleteAllAttendants;
+
 exports.getAttendants = getAttendants;
-exports.addAttendants = addAttendants;
+exports.getAllAttendanceRules = getAllAttendanceRules;
 exports.getAllAttendants = getAllAttendants;
-exports.deleteSpecificAttendants = deleteSpecificAttendants;
-exports.switchQueueAll = switchQueueAll;
-exports.switchQueueSpecific = switchQueueSpecific;
+exports.addAttendants = addAttendants;
 exports.addConfig = addConfig;
 exports.addResources = addResources;
+exports.deleteSpecificAttendants = deleteSpecificAttendants;
+exports.deleteAllAttendants = deleteAllAttendants;
+exports.switchQueueAll = switchQueueAll;
+exports.switchQueueSpecific = switchQueueSpecific;
 
-// function _changeAuthToken(newAuthToken) {
-//   _axios.defaults.headers.Authorization = newAuthToken;
-// }
 
 function _addAttendantsSingleRequest(i, attList) {
   _request({
