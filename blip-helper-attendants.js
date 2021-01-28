@@ -68,6 +68,11 @@ async function getAllAttendants(authToken) {
   }
 }
 
+/**
+ * Pegar todas as regras de atendimento de um bot
+ * @param {String} authToken Chave de autenticação do bot
+ * @return {Array}           Regras adicionadas
+ */
 async function getAllAttendanceRules(authToken) {
   if (authToken) {
     _changeAuthToken(authToken);
@@ -91,35 +96,23 @@ async function getAllAttendanceRules(authToken) {
   }
 }
 
-function _addRules(i, rulesList) {
-  let rule = rulesList[i];
-  _request({
-    "id": shortid.generate(),
-    'to': 'postmaster@desk.msging.net',
-    'method': 'set',
-    'uri': '/rules',
-    'type': 'application/vnd.iris.desk.rule+json',
-    'resource': {
-        'id': shortid.generate(),
-        'title': rule.title,
-        'isActive': rule.isActive,
-        'ownerIdentity': rule.ownerIdentity,
-        'property': rule.property,
-        'relation': rule.relation,
-        'values': rule.values,
-        'team': rule.team
-    }
-})
-    .then(function (resp) {
-      console.log(resp.data.status, i);
-      if (i < rulesList.length - 1) {
-        i++;
-        addRules(i, rulesList);
-      }
-    })
-    .catch(function (err) {
-      console.log(err);
-    });
+
+/**
+ * Adicionar regras de atendimento em um bot
+ * @param {String} authToken    Chave de autenticação do bot
+ * @param {Array}  attRulesList Array com regras para adicionar
+ * @return {}                   Não há retorno
+ */
+function addAttendanceRules(authToken, attRulesList) {
+  if (authToken) {
+    _changeAuthToken(authToken);
+  } else {
+    throw "authToken must not be null";
+  }
+  if (attRulesList === undefined) {
+    throw "attRulesList must not be null";
+  }
+  _addRules(0, attRulesList);
 }
 
 /**
@@ -271,7 +264,7 @@ function switchQueueSpecific(authToken, oldQueue, newQueue, attList) {
  * @param {String} authTokenOut   Chave de autenticação do bot que receberá as configurações
  * @return {}                 Não há retorno
  */
-function addConfig(authTokenIn, authTokenOut) {
+function migrateBotConfig(authTokenIn, authTokenOut) {
   if (authTokenIn) {
     _changeAuthToken(authTokenIn);
   } else if (authTokenIn === undefined && authTokenOut === undefined) {
@@ -312,7 +305,7 @@ function addConfig(authTokenIn, authTokenOut) {
  * @param {String} authTokenOut   Chave de autenticação do bot que receberá os recursos
  * @return {}                 Não há retorno
  */
-function addResources(authTokenIn, authTokenOut) {
+function migrateBotResources(authTokenIn, authTokenOut) {
   if (authTokenIn) {
     _changeAuthToken(authTokenIn);
   } else if (authTokenIn === undefined && authTokenOut === undefined) {
@@ -331,17 +324,40 @@ function addResources(authTokenIn, authTokenOut) {
   });
 }
 
+/**
+ * Adicionar regrasa de atendimento de um bot para outro
+ * @param {String} authTokenIn    Chave de autenticação do bot que possui os recursos
+ * @param {String} authTokenOut   Chave de autenticação do bot que receberá os recursos
+ * @return {}                     Não há retorno
+ */
+function migrateAttendanceRules(authTokenIn, authTokenOut){
+  if (authTokenIn) {
+    _changeAuthToken(authTokenIn);
+  } else if (authTokenIn === undefined && authTokenOut === undefined) {
+    throw "AuthToken must not be null";
+  } else {
+    throw "AuthToken must not be null";
+  }
+  getAllAttendanceRules(
+    authTokenIn
+  )
+  .then((rules) => {
+    addAttendanceRules(authTokenOut, rules);
+  });
+}
 
 exports.getAttendants = getAttendants;
 exports.getAllAttendanceRules = getAllAttendanceRules;
 exports.getAllAttendants = getAllAttendants;
 exports.addAttendants = addAttendants;
-exports.addConfig = addConfig;
-exports.addResources = addResources;
+exports.addAttendanceRules = addAttendanceRules;
 exports.deleteSpecificAttendants = deleteSpecificAttendants;
 exports.deleteAllAttendants = deleteAllAttendants;
 exports.switchQueueAll = switchQueueAll;
 exports.switchQueueSpecific = switchQueueSpecific;
+exports.migrateAttendanceRules = migrateAttendanceRules;
+exports.migrateBotConfig = migrateBotConfig;
+exports.migrateBotResources = migrateBotResources;
 
 
 function _addAttendantsSingleRequest(i, attList) {
@@ -445,4 +461,35 @@ function _addSingleResource(
       );
     });
   });
+}
+
+function _addRules(i, rulesList) {
+  let rule = rulesList[i];
+  _request({
+    "id": shortid.generate(),
+    'to': 'postmaster@desk.msging.net',
+    'method': 'set',
+    'uri': '/rules',
+    'type': 'application/vnd.iris.desk.rule+json',
+    'resource': {
+        'id': shortid.generate(),
+        'title': rule.title,
+        'isActive': rule.isActive,
+        'ownerIdentity': rule.ownerIdentity,
+        'property': rule.property,
+        'relation': rule.relation,
+        'values': rule.values,
+        'team': rule.team
+    }
+})
+    .then(function (resp) {
+      console.log(resp.data.status, i);
+      if (i < rulesList.length - 1) {
+        i++;
+        _addRules(i, rulesList);
+      }
+    })
+    .catch(function (err) {
+      console.log(err);
+    });
 }
